@@ -1,5 +1,5 @@
 import re # 导入正则表达式包
-
+import datetime
 
 def repl_camel():
   def replacer(m):
@@ -26,7 +26,7 @@ def fun(ss: str) -> str:
   # 引擎声明, 
   # 字段后的charset声明
   ss = re.sub(r"ENGINE = InnoDB.*;","", ss)
-  ss = re.sub(r" CHARACTER SET utf8 COLLATE utf8_general_ci.*,",",", ss)
+  ss = re.sub(r" CHARACTER SET.*,",",", ss)
 
   # --> 1 为表名添加 数据库名称 
   # CREATE TABLE `sys_dept` -> CREATE TABLE public.sys_dept(指定库名 public.)
@@ -63,7 +63,16 @@ def fun(ss: str) -> str:
   return ss
 
 
-if __name__ == '__main__':
-	with open('some_file.txt', "r", encoding='utf-8') as src:
-	# with open('t1', "r", encoding='utf-8') as src:
-		print(fun(src.read()))
+def file_io(input_file: str='input.sql',output_file: str='outputs.sql' ):
+      # with open("input.sql", "rw",encoding="utf-8") as sql:
+    with open(input_file, "r",encoding="utf-8") as sql:
+      rst = fun(sql.read(),)
+      with open(output_file, "w", encoding="utf-8") as otp:
+        gen_dt = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+        rst = "-- GEN DT: {}\n\n{}".format(gen_dt,rst)
+        otp.write(rst)
+
+if __name__ == "__main__":
+  file_io(
+    input_file="test/t1.sql",
+  )
