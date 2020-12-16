@@ -32,29 +32,22 @@ def repl_camel():
 # pattern
 
 # 建表开始 - 第一行
-_msq_crt_tb_start_ln_ptn = r"(?P<start_ln>CREATE TABLE\s*`(?P<tb_nm>.*)`\s*\()"
+_msq_crt_tb_start_ln_ptn = r"(?P<start_ln>CREATE TABLE\s*`(?P<tb_nm>.*)`\s*\(.*)"
 
 # 建表内容 - 字段
-_msq_crt_tb_fld_ln_ptn = r"(?P<tb_fld_ln>\n\s+(?P<fld_nm>`.*`)\s+(?P<tb_typ>\w+(\(\d+\))?)\s*(?P<fld_n_nul>(NOT)?\s?NULL)?.*)"
+_msq_crt_tb_fld_ln_ptn = r"(?P<tb_fld_ln>\n\s+`(?P<fld_nm>.*)`\s+(?P<tb_typ>\w+(\(\d+\))?)\s*(?P<fld_n_nul>(NOT)?\s?NULL)?.*)"
 # 建表内容 - key
-_msq_crt_tb_key_ln_ptn = r"(?P<tb_key_ln>\n\s+PRIMARY KEY.*)"
-
-# 建表内容 - 全部
-_msq_crt_tb_content_ln_ptn = r"(?P<tb_content>{_tb_fld_ln}+)".format(
-    _tb_fld_ln=_msq_crt_tb_fld_ln_ptn,
-    _tb_key_ln=_msq_crt_tb_key_ln_ptn,
-)
+_msq_crt_tb_key_ln_ptn = r"(?P<tb_key_ln>\n\s+PRIMARY KEY \(`(?P<tb_key_fld>.*)`\).*)"
 
 # 建表结束 - 最后一行
 _msq_crt_tb_end_ln_ptn = r"(?P<end_ln>\n\)\s*ENGINE.*)"
 
 # 建表语句 - 完整解析
-_msq_crt_tb_ptn = r"(?P<crt_tb>{0}{1}+{2})".format(
-    _msq_crt_tb_start_ln_ptn,
-    _msq_crt_tb_content_ln_ptn,
-    _msq_crt_tb_end_ln_ptn)
-# _msq_crt_tb_ptn = r"{_start_ln}{_tb_content}+{_end_ln}".format(
-#     _start_ln=_msq_crt_tb_start_line_ptn, _tb_content=_msq_crt_tb_content_line_ptn, _end_ln=_msq_crt_tb_end_line_ptn)
+_msq_crt_tb_ptn = r"(?P<crt_tb>{_s}(({_fld}|{_key})*){_end})".format(
+    _s=_msq_crt_tb_start_ln_ptn,
+    _fld=_msq_crt_tb_fld_ln_ptn,
+    _key=_msq_crt_tb_key_ln_ptn,
+    _end=_msq_crt_tb_end_ln_ptn)
 
 
 def _pretreatment(ss: str) -> str:
@@ -69,31 +62,23 @@ def _pretreatment(ss: str) -> str:
     ss = re.sub(r"SET NAMES.*", "", ss)
     ss = re.sub(r"SET FOREIGN_KEY_CHECKS.*", "", ss)
     # 移除多余的 /n
-    # ss = re.sub(r"!({}")
-    # ss = re.sub(_msq_crt_tb_start_ln_ptn, r"\n## 匹配开头,表名> \g<tb_nm>\n", ss)
-    # ss = re.sub(_msq_crt_tb_fld_ln_ptn, r"\n  ## 匹配字段> \g<fld_nm>", ss)
-    # ss = re.sub(_msq_crt_tb_key_ln_ptn, r"\n  ## 匹配key> g<fld_nm>", ss)
-    ss = re.sub(_msq_crt_tb_content_ln_ptn, r"\n  ## 匹配表内容> g<fld_nm>", ss)
-    # ss = re.sub(_msq_crt_tb_end_ln_ptn, r"\n## 匹配end> g<fld_nm>", ss)
-
-    # ss = re.sub(_msq_crt_tb_ptn, "##", ss)
-    # ss = re.sub(r"{_tb}".format(_tb=_msq_crt_tb_ptn), r"#vvv 匹配一个表 vvv\n \g<tb_nm>AAA AAA#\n", ss)
-    # ss = re.sub(r"(\n*){_tb}".format(_tb=_msq_crt_tb_ptn), "##", ss)
-    # ss = re.sub(r"(\n*){_start_ln}{_content_ln}{_end_ln}"
-    #             .format(_start_ln=_msq_crt_tb_start_line_ptn,
-    #                     _content_ln=_msq_crt_tb_content_line_ptn,
-    #                     _end_ln=_msq_crt_tb_end_line_ptn),
-    #             r"\n\g<start_ln>\g<tb_content>\g<end_ln>", ss)
+    ss = re.sub(r"\n*{_s}((\n\s\s.*)*){_e}\n*".format(
+        _s=_msq_crt_tb_start_ln_ptn,
+        _e=_msq_crt_tb_end_ln_ptn), r"\g<1>\g<3>\g<5>\n", ss)
     return ss
     pass
 
 
-def _logic(ss: str) -> str:
+def _logic(ss: str, schema_name: str, ) -> str:
     """
     主体逻辑
     """
     # ss = re.sub(r"")
-
+    # ss = re.sub(_msq_crt_tb_start_ln_ptn, r"\n## 匹配开头,表名> \g<tb_nm>\n", ss)
+    # ss = re.sub(_msq_crt_tb_fld_ln_ptn, r"\n  ## 匹配字段> \g<fld_nm>", ss)
+    # ss = re.sub(_msq_crt_tb_key_ln_ptn, r"\n  ## 匹配key> g<fld_nm>", ss)
+    # ss = re.sub(_msq_crt_tb_end_ln_ptn, r"\n## 匹配end> g<fld_nm>", ss)
+    ss = re.sub(_msq_crt_tb_ptn, r"\n  ## 匹配表内容> g<fld_nm>", ss)
     return ss
     pass
 
@@ -118,7 +103,7 @@ def mysql_prase(
     pk_type: 设置表的主键类型
     """
     ss = _pretreatment(ss)
-    ss = _logic(ss)
+    ss = _logic(ss, psql_schema_name)
     ss = _aftertreatment(ss)
     return ss
     pass
