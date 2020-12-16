@@ -1,3 +1,5 @@
 input.sql
 outputs.sql
-.vscode/settings.json
+.vscode/
+/_inputs/
+/_outputs/
