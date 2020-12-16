@@ -61,10 +61,8 @@ def _pretreatment(ss: str) -> str:
     ss = re.sub(r"INSERT INTO.*", "", ss)
     ss = re.sub(r"SET NAMES.*", "", ss)
     ss = re.sub(r"SET FOREIGN_KEY_CHECKS.*", "", ss)
-    # 移除多余的 /n
-    ss = re.sub(r"\n*{_s}((\n\s\s.*)*){_e}\n*".format(
-        _s=_msq_crt_tb_start_ln_ptn,
-        _e=_msq_crt_tb_end_ln_ptn), r"\g<1>\g<3>\g<5>\n", ss)
+    # 移除多余的 \n
+    ss = re.sub(r"\n*{}\n+".format(_msq_crt_tb_ptn), r"\g<1>", ss)
     return ss
     pass
 
@@ -78,7 +76,7 @@ def _logic(ss: str, schema_name: str, ) -> str:
     # ss = re.sub(_msq_crt_tb_fld_ln_ptn, r"\n  ## 匹配字段> \g<fld_nm>", ss)
     # ss = re.sub(_msq_crt_tb_key_ln_ptn, r"\n  ## 匹配key> g<fld_nm>", ss)
     # ss = re.sub(_msq_crt_tb_end_ln_ptn, r"\n## 匹配end> g<fld_nm>", ss)
-    ss = re.sub(_msq_crt_tb_ptn, r"\n  ## 匹配表内容> g<fld_nm>", ss)
+    # ss = re.sub(_msq_crt_tb_ptn, r"\n  ## 匹配表内容> g<fld_nm>", ss)
     return ss
     pass
 
