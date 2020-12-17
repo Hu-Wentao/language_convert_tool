@@ -3,3 +3,4 @@ outputs.sql
 .vscode/
 /_inputs/
 /_outputs/
+src/__pycache__/main.cpython-37.pyc

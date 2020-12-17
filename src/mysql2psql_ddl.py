@@ -2,6 +2,7 @@
 
 import re  # 导入正则表达式包
 import datetime
+import main
 
 
 # -----------------------------------------------------------------------------
@@ -25,6 +26,15 @@ _msq_crt_tb_ptn = r"(?P<crt_tb>{_s}(({_fld}|{_key})*){_end})".format(
     _key=_msq_crt_tb_key_ln_ptn,
     _end=_msq_crt_tb_end_ln_ptn)
 
+# ------------------------------------------------------------------------------
+
+class MySQL2PsqlDDLConverter(main.IConvertor):
+    def __init__(self,input_full_nm:str,output_nm:str= 'opt'):
+        super(MySQL2PsqlDDLConverter, self).__init__(input_full_nm=input_full_nm, output_postfix='sql',annotation_sign='--',output_nm=output_nm)
+    pass
+
+    def convertor_logic(self, in_str:str)-> str:
+        return mysql_prase(in_str)
 # ------------------------------------------------------------------------------
 
 
@@ -123,10 +133,8 @@ def mysql_prase(
     ss = _logic(ss, psql_schema_name)
     ss = _aftertreatment(ss)
     return ss
- 
 
 def file_io(input_file: str = '_inputs/input.sql', output_file: str = '_outputs/outputs.sql', insert_dt: bool = True,):
-    # with open("input.sql", "rw",encoding="utf-8") as sql:
     with open(input_file, "r", encoding="utf-8") as sql:
         rst = mysql_prase(sql.read(),)
         with open(output_file, "w", encoding="utf-8") as otp:
@@ -137,4 +145,4 @@ def file_io(input_file: str = '_inputs/input.sql', output_file: str = '_outputs/
 
 
 if __name__ == "__main__":
-    file_io()
+    MySQL2PsqlDDLConverter('_inputs/input.sql').run()
