@@ -35,7 +35,7 @@ def repl_camel():
 _msq_crt_tb_start_ln_ptn = r"(?P<start_ln>CREATE TABLE\s*`(?P<tb_nm>.*)`\s*\(.*)"
 
 # 建表内容 - 字段
-_msq_crt_tb_fld_ln_ptn = r"(?P<tb_fld_ln>\n\s+`(?P<fld_nm>.*)`\s+(?P<tb_typ>\w+(\(\d+\))?)\s*(?P<fld_n_nul>(NOT)?\s?NULL)?.*)"
+_msq_crt_tb_fld_ln_ptn = r"(?P<tb_fld_ln>\n\s+`(?P<fld_nm>.*)`\s+(?P<fld_typ>\w+(\(\d+\))?)\s*(?P<fld_other>(?P<fld_n_nul>(NOT)?\s?NULL)?).*)"
 # 建表内容 - key
 _msq_crt_tb_key_ln_ptn = r"(?P<tb_key_ln>\n\s+PRIMARY KEY \(`(?P<tb_key_fld>.*)`\).*)"
 
@@ -71,12 +71,10 @@ def _logic(ss: str, schema_name: str, ) -> str:
     """
     主体逻辑
     """
-    # ss = re.sub(r"")
-    # ss = re.sub(_msq_crt_tb_start_ln_ptn, r"\n## 匹配开头,表名> \g<tb_nm>\n", ss)
-    # ss = re.sub(_msq_crt_tb_fld_ln_ptn, r"\n  ## 匹配字段> \g<fld_nm>", ss)
-    # ss = re.sub(_msq_crt_tb_key_ln_ptn, r"\n  ## 匹配key> g<fld_nm>", ss)
-    # ss = re.sub(_msq_crt_tb_end_ln_ptn, r"\n## 匹配end> g<fld_nm>", ss)
-    # ss = re.sub(_msq_crt_tb_ptn, r"\n  ## 匹配表内容> g<fld_nm>", ss)
+    ss = re.sub(_msq_crt_tb_start_ln_ptn, r"\nCREATE TABLE {_skm_nm}.\g<tb_nm> (".format(_skm_nm=schema_name), ss)
+    ss = re.sub(_msq_crt_tb_fld_ln_ptn, "\n  \"\\g<fld_nm>\" \\g<fld_typ> \\g<fld_other>,", ss)
+    ss = re.sub(_msq_crt_tb_key_ln_ptn, "\n  CONSTRAINT \\g<tb_key_fld> PRIMARY KEY (id)", ss)
+    ss = re.sub(_msq_crt_tb_end_ln_ptn, "\n);", ss)
     return ss
     pass
 
@@ -107,10 +105,11 @@ def mysql_prase(
     pass
 
 
-def transverter(ss: str,
-                psql_schema_name: str = 'public',
-                pk_type: str = 'varchar(36)',
-                ) -> str:
+def transverter(
+    ss: str,
+    psql_schema_name: str = 'public',
+    pk_type: str = 'varchar(36)',
+) -> str:
     """
     将MySQL语句 转换为 PostgreSQL DDL语句
     """
