@@ -4,29 +4,35 @@ import re  # 导入正则表达式包
 import datetime
 
 
-def repl_camel():
+def proc_fld_ln():
     """
-    # 将表的字段名由大驼峰改为小驼峰, 
-    # xxxDate重命名为 xxxAt
-    # modifiedXxx -> updateXxx
+    处理MySQL建表的 字段行 [_msq_crt_tb_fld_ln_ptn]
     """
     def replacer(m):
-        # 找到 字段名的首字母(这里是第$char_offset个), 然后替换为小写, 完成大小驼峰转换
-        char_offset = 1
-        all = m.group(0)
+        # 处理字段名
+        # 大驼峰 -> 小驼峰
+        fld_nm = m.group("fld_nm")
+        if fld_nm[0].isupper():
+            fld_nm = (fld_nm[0]).lower()+fld_nm[1:]
+        # 更改字段名
+        # fld_nm = re.sub(r".*Id", "id", fld_nm)
+        fld_nm.replace("Date", "At")
+        fld_nm.replace("modified", "update")
 
-        char = all[char_offset]
-        if char.isupper():
-            all = all[:char_offset]+char.lower()+all[char_offset+1:]
+        # 处理字段类型
+        fld_typ = m.group("fld_typ")
+        fld_typ = fld_typ.replace("bigint(20)", "varchar(36)")
+        fld_typ = fld_typ.replace("int(11)", "integer")
+        fld_typ = fld_typ.replace("tinyint(4)", "boolean")
+        fld_typ = fld_typ.replace("tinyinteger", "boolean")
+        fld_typ = fld_typ.replace("datetime(0)", "timestamp")
 
-        # 将 xxxDate 重命名为 xxxAt
-        all = str(all).replace("Date", "At")
-        # modifiedXxx -> updateXxx
-        all = str(all).replace("modified", "update")
-        return all
+        # 其他
+        fld_other = m.group("fld_other")
+        if fld_other != "":
+            fld_other = " "+fld_other
+        return "\n  \"{_fld_nm}\" {_fld_typ}{_fld_other},".format(_fld_nm=fld_nm, _fld_typ=fld_typ, _fld_other=fld_other)
     return replacer
-
-# ----------------------------------------------------------------------------------
 
 
 # pattern
@@ -67,13 +73,24 @@ def _pretreatment(ss: str) -> str:
     pass
 
 
-def _logic(ss: str, schema_name: str, ) -> str:
+def _logic(ss: str, schema_name: str = "", ) -> str:
     """
     主体逻辑
     """
-    ss = re.sub(_msq_crt_tb_start_ln_ptn, r"\nCREATE TABLE {_skm_nm}.\g<tb_nm> (".format(_skm_nm=schema_name), ss)
-    ss = re.sub(_msq_crt_tb_fld_ln_ptn, "\n  \"\\g<fld_nm>\" \\g<fld_typ> \\g<fld_other>,", ss)
-    ss = re.sub(_msq_crt_tb_key_ln_ptn, "\n  CONSTRAINT \\g<tb_key_fld> PRIMARY KEY (id)", ss)
+    # 添加 schema名
+    if schema_name!="":
+        schema_name= schema_name+"."
+    ss = re.sub(_msq_crt_tb_start_ln_ptn,
+                r"\nCREATE TABLE {_skm_nm}\g<tb_nm> ("
+                .format(_skm_nm=schema_name), ss)
+    # 处理字段
+    ss = re.sub(_msq_crt_tb_fld_ln_ptn, proc_fld_ln(), ss)
+
+    # 处理Key声明
+    ss = re.sub(_msq_crt_tb_key_ln_ptn,
+                "\n  CONSTRAINT \\g<tb_key_fld> PRIMARY KEY (id)", ss)
+    
+    # 处理建表声明结尾
     ss = re.sub(_msq_crt_tb_end_ln_ptn, "\n);", ss)
     return ss
     pass
@@ -81,7 +98,7 @@ def _logic(ss: str, schema_name: str, ) -> str:
 
 def _aftertreatment(ss: str) -> str:
     """
-    最终处理
+    最后处理
 
     """
     return ss
@@ -127,7 +144,7 @@ def transverter(
     # 将表的字段名由大驼峰改为小驼峰,
     # xxxDate重命名为 xxxAt
     # modifiedXxx -> updateXxx
-    ss = re.sub(r"`(\w.*)`", repl_camel(), ss)
+    # ss = re.sub(r"`(\w.*)`", repl_var_name(), ss)
 
     # 2-> 3 替换 主键声明为DDL格式, 主键名固定为id , CONSTRAINT <表名>_pkey PRIMARY KEY (id)
     # - 2将字段改为小驼峰后, 将会影响到 主键的定义名称
@@ -146,11 +163,11 @@ def transverter(
                 "\g<1>`id` {} NOT NULL,".format(pk_type), ss, flags=re.MULTILINE)
     ss = re.sub(r"(`.*By` )(bigint\(.*\))(.*,)",
                 "\g<1>{}\g<3>".format(pk_type), ss, flags=re.MULTILINE)
-    ss = re.sub(r"bigint\(.*\)", "bigint", ss)
-    ss = re.sub(r"int\(.*\)", "integer", ss)
-    ss = re.sub(r"tinyint\(4\)", "boolean", ss)
-    ss = re.sub(r"tinyinteger", "boolean", ss)
-    ss = re.sub(r"datetime\(0\)", "timestamp", ss)
+    # ss = re.sub(r"bigint\(.*\)", "bigint", ss)
+    # ss = re.sub(r"int\(.*\)", "integer", ss)
+    # ss = re.sub(r"tinyint\(4\)", "boolean", ss)
+    # ss = re.sub(r"tinyinteger", "boolean", ss)
+    # ss = re.sub(r"datetime\(0\)", "timestamp", ss)
 
     # --> 5 收尾工作
     # 替换 `` 为 ""
