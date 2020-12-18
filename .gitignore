@@ -2,4 +2,5 @@
 .idea/
 _inputs/
 _outputs/
+_parse/
 src/__pycache__/
