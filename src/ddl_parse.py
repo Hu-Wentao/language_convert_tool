@@ -4,7 +4,7 @@ import json
 # -----------------------------------------------------------------------------
 # pattern, 这里只适配 通过DBeaver 生成的DDL语句
 # - 缩进使用一个 \t
-# - 字段名不用或用"" 包裹
+# - 字段名 不用或用"" 包裹
 
 # 建表开始 - 第一行
 _ddl_start_ln_ptn = r"(?P<start_ln>CREATE TABLE\s+((?P<tb_schema>[a-zA-Z_]+)\.)?(?P<tb_nm>[a-zA-Z_]+)\s+\(.*)"
@@ -58,7 +58,6 @@ class DdlParse(main.IParser):
                     meta_map["fields"] = []
                 meta_map["fields"].append(fld)
             elif r[3] != "": # 匹配 结尾);
-                print(meta_map)
                 data.append(meta_map)
                 meta_map = {}
         return json.dumps(data)
