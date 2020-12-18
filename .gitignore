@@ -1,6 +1,5 @@
-input.sql
-outputs.sql
 .vscode/
-/_inputs/
-/_outputs/
-src/__pycache__/main.cpython-37.pyc
+.idea/
+_inputs/
+_outputs/
+src/__pycache__/

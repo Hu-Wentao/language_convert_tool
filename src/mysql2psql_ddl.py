@@ -28,12 +28,17 @@ _msq_crt_tb_ptn = r"(?P<crt_tb>{_s}(({_fld}|{_key})*){_end})".format(
 
 # ------------------------------------------------------------------------------
 
-class MySQL2PsqlDDLConverter(main.IConvertor):
-    def __init__(self,input_full_nm:str,output_nm:str= 'opt'):
-        super(MySQL2PsqlDDLConverter, self).__init__(input_full_nm=input_full_nm, output_postfix='sql',annotation_sign='--',output_nm=output_nm)
+
+class Mysql2PsqlDdlConverter(main.IConvertor):
+    def __init__(self, input_full_nm: str, output_nm: str = '_outputs/opt'):
+        super(Mysql2PsqlDdlConverter, self).__init__(
+            input_full_nm=input_full_nm,
+            output_postfix='sql',
+            annotation_sign='--',
+            output_nm=output_nm)
     pass
 
-    def convertor_logic(self, in_str:str)-> str:
+    def convertor_logic(self, in_str: str) -> str:
         return mysql_prase(in_str)
 # ------------------------------------------------------------------------------
 
@@ -68,6 +73,15 @@ def _proc_fld_ln():
         return "\n  \"{_fld_nm}\" {_fld_typ}{_fld_other},".format(_fld_nm=fld_nm, _fld_typ=fld_typ, _fld_other=fld_other)
     return replacer
 
+def _proc_key_ln():
+    """
+    处理 Key声明, 将Key重命名为小写加下划线
+    """
+    def replacer(m):
+        tb_key_fld = m.group('tb_key_fld')
+        tb_key_fld = re.sub(r'[A-Z]+', lambda x:"_"+x.group(0).lower(),tb_key_fld)
+        return "\n  CONSTRAINT {_fld} PRIMARY KEY (id)".format(_fld=tb_key_fld)
+    return replacer
 
 def _pretreatment(ss: str) -> str:
     """
@@ -100,8 +114,7 @@ def _logic(ss: str, schema_name: str = "") -> str:
     ss = re.sub(_msq_crt_tb_fld_ln_ptn, _proc_fld_ln(), ss)
 
     # 处理Key声明
-    ss = re.sub(_msq_crt_tb_key_ln_ptn,
-                "\n  CONSTRAINT \\g<tb_key_fld> PRIMARY KEY (id)", ss)
+    ss = re.sub(_msq_crt_tb_key_ln_ptn,_proc_key_ln(), ss)
 
     # 处理建表声明结尾
     ss = re.sub(_msq_crt_tb_end_ln_ptn, "\n);", ss)
@@ -120,6 +133,7 @@ def _aftertreatment(ss: str) -> str:
 
 # ------------------------------------------------------------------------------
 
+
 def mysql_prase(
     ss: str,
     psql_schema_name: str = 'public',
@@ -134,6 +148,7 @@ def mysql_prase(
     ss = _aftertreatment(ss)
     return ss
 
+
 def file_io(input_file: str = '_inputs/input.sql', output_file: str = '_outputs/outputs.sql', insert_dt: bool = True,):
     with open(input_file, "r", encoding="utf-8") as sql:
         rst = mysql_prase(sql.read(),)
@@ -145,4 +160,4 @@ def file_io(input_file: str = '_inputs/input.sql', output_file: str = '_outputs/
 
 
 if __name__ == "__main__":
-    MySQL2PsqlDDLConverter('_inputs/input.sql').run()
+    Mysql2PsqlDdlConverter('_inputs/input.sql').run()
