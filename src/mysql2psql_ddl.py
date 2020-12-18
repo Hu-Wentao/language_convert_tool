@@ -54,8 +54,8 @@ def _proc_fld_ln():
         if fld_nm[0].isupper():
             fld_nm = (fld_nm[0]).lower()+fld_nm[1:]
         # 更改字段名
-        fld_nm.replace("Date", "At")
-        fld_nm.replace("modified", "update")
+        fld_nm = fld_nm.replace("Date", "At")
+        fld_nm = fld_nm.replace("modified", "update")
 
         # 处理字段类型
         fld_typ = m.group("fld_typ")
@@ -73,15 +73,18 @@ def _proc_fld_ln():
         return "\n  \"{_fld_nm}\" {_fld_typ}{_fld_other},".format(_fld_nm=fld_nm, _fld_typ=fld_typ, _fld_other=fld_other)
     return replacer
 
+
 def _proc_key_ln():
     """
     处理 Key声明, 将Key重命名为小写加下划线
     """
     def replacer(m):
         tb_key_fld = m.group('tb_key_fld')
-        tb_key_fld = re.sub(r'[A-Z]+', lambda x:"_"+x.group(0).lower(),tb_key_fld)
+        tb_key_fld = re.sub(r'[A-Z]+', lambda x: "_" +
+                            x.group(0).lower(), tb_key_fld)
         return "\n  CONSTRAINT {_fld} PRIMARY KEY (id)".format(_fld=tb_key_fld)
     return replacer
+
 
 def _pretreatment(ss: str) -> str:
     """
@@ -114,7 +117,7 @@ def _logic(ss: str, schema_name: str = "") -> str:
     ss = re.sub(_msq_crt_tb_fld_ln_ptn, _proc_fld_ln(), ss)
 
     # 处理Key声明
-    ss = re.sub(_msq_crt_tb_key_ln_ptn,_proc_key_ln(), ss)
+    ss = re.sub(_msq_crt_tb_key_ln_ptn, _proc_key_ln(), ss)
 
     # 处理建表声明结尾
     ss = re.sub(_msq_crt_tb_end_ln_ptn, "\n);", ss)
