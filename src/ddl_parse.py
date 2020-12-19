@@ -1,4 +1,4 @@
-import main
+from base import IParser
 import re
 import json
 # -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ _ddl_end_ln_ptn = r"(?P<end_ln>\);.*)"
 # ------------------------------------------------------------------------------
 
 
-class DdlParse(main.IParser):
+class DdlParse(IParser):
     def convertor_logic(self, in_str: str):
         ss = in_str
         data = []  # ddl list
@@ -63,7 +63,7 @@ class DdlParse(main.IParser):
         return json.dumps(data)
 
 
-if __name__ == '__main__':
-    DdlParse("test/test_file/t_ddl.sql", output_nm="_parse/otp").run()
-    # DdlParse("_inputs/wms_ddl.sql", output_nm="_parse/otp").run()
+if __name__ == '__base__':
+    # DdlParse("test/test_file/t_ddl.sql", output_nm="_parse/otp").run()
+    DdlParse("_inputs/wms_ddl.sql", output_nm="_parse/wms_ddl").run()
     pass

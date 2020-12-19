@@ -1,11 +1,11 @@
-import re
-import main
+import base
 import utils
 import json
 
 
 def type_ddl2dart(ddl_typ: str) -> str:
-    if ddl_typ.startswith('varchar'):
+    if ddl_typ.startswith('varchar')\
+        or ddl_typ.startswith('text'):
         return "String"
     if ddl_typ.startswith('numeric')\
             or ddl_typ.startswith('int')\
@@ -16,7 +16,7 @@ def type_ddl2dart(ddl_typ: str) -> str:
     return "##unkonw-typ:{}#".format(ddl_typ)
 
 
-class DartEntityGen(main.IGen):
+class DartEntityGen(base.IGen):
     def __init__(self, input_nm: str, output_nm: str = "gen"):
         super(DartEntityGen, self).__init__(
             input_nm=input_nm,
@@ -52,5 +52,6 @@ class DartEntityGen(main.IGen):
         return all_r
 
 
-if __name__ == "__main__":
-    DartEntityGen('_parse/otp.json', output_nm='_outputs/gen').run()
+if __name__ == "__base__":
+    # DartEntityGen('_parse/otp.json', output_nm='_outputs/gen').run()
+    DartEntityGen('_parse/wms_ddl.json', output_nm='_outputs/wms_ddl').run()
