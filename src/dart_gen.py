@@ -201,5 +201,6 @@ if __name__ == "__main__":
     ###
     # DartGacICrudRepoGen('_parse/wms_ddl.json',
     #                     output_nm='_outputs/i_wms_repos').run()
-    DartGacCrudRepoImplGen('_parse/wms_ddl.json',
-                       output_nm = '_outputs/wms_repo_impls').run()
+    DartGacCrudRepoImplGen(
+        '_parse/wms_ddl.json',
+        output_nm='_outputs/wms_repo_impls').run()

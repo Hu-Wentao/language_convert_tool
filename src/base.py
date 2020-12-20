@@ -77,20 +77,16 @@ class IGen(IConvertor):
 class IAccess:
     """
     读写通道, 可以是文件, 控制台 或者其他 IAccess实现类进行读写
+    self.value 以 str 类型保存读取到的数据
     """
 
-    def __init__(self,value=None):
+    def __init__(self, value:str=None):
         self.value = value
         pass
 
     @abc.abstractmethod
-    def read(self) -> object:
+    def read(self) -> str:
         pass
-
-    @abc.abstractmethod
-    def set(self, value)->object:
-        self.value = value
-        return self.value
 
     @abc.abstractmethod
     def write(self) -> Optional[str]:
@@ -99,40 +95,72 @@ class IAccess:
         """
         pass
 
-
-class IProcessor(object):
     @abc.abstractmethod
-    def run(self, access: IAccess) -> IAccess:
-        """
-        返回值为 access: IAccess, 正常情况下直接运行 access 即可, 
-        但如果有多个Processor, 则需要将 access 作为下一个processor的input
-        """
-        pass
+    def set(self, value) -> str:
+        self.value = value
+        return self.value
+
+    @abc.abstractmethod
+    def get(self) -> str:
+        return self.value
 
 
-class IBaseConverter:
-    """
-    全新的转换基类
-    """
-
-    def __init__(
-        self,
-        access: IAccess,
-        process_list: List[IProcessor],
-    ):
+class IProcessor(IAccess):
+    def __init__(self, access: IAccess):
         self.access = access
-        self.process_list = process_list
-        pass
+
+    def run(self) -> IAccess:
+        """
+        返回 IAccess, 可以向其他Proc提供数据
+        """
+        self.access.set(self.on_run(self.access.read()))
+        return self.access
 
     @abc.abstractmethod
-    def on_init(self):
+    def on_run(self,input: str) -> str:
         pass
+
+    def read(self, access: IAccess = None) -> str:
+        """
+        这里重写 read(), 当Processor作为 IAccess时, 将会调用本方法 
+        """
+        if access is not None:
+            self.access = access
+        return self.run().get()
+
 # -----------------------------------------------------------------------------
 
 
+class CustomAccess(IAccess):
+    """
+    快速自定义 Access, 
+    on_read: String Function()
+    on_write: String Function()
+    """
+
+    def __init__(self, on_read, on_write, value: str = ''):
+        super(CustomAccess, self).__init__(value)
+        self.on_read = on_read
+        self.on_write = on_write
+
+    def read(self) -> str:
+        if self.on_read is not None:
+            self.value = self.on_read()
+        return self.value
+
+    def write(self) -> Optional[str]:
+        if self.on_write is not None:
+            err = self.on_write()
+            return err
+
+
 class CmdAccess(IAccess):
+    """
+    从CMD中读取和输出数据
+    """
+
     def __init__(self, value: str = '', need_read: bool = True):
-        self.value = value
+        super(CmdAccess, self).__init__(value)
         self.need_read = need_read
 
     def read(self, tips: str = ''):
@@ -145,37 +173,28 @@ class CmdAccess(IAccess):
 
 
 class CustomProcessor(IProcessor):
-    def __init__(self, on_run):
-        self.on_run = on_run
+    """
+    on_run: String Function(String input)
+    """
 
-    def run(self, input: IAccess):
-        v = self.on_run(input.read())
-        input.set(v)
-        return input
+    def __init__(self, access: IAccess, proc):
+        super(CustomProcessor, self).__init__(access=access)
+        self.proc = proc
 
-
-class CustomConverter(IBaseConverter):
-    def __init__(
-        self,
-        access: IAccess,
-        process_list: List[IProcessor],
-    ):
-        super(CustomConverter, self).__init__(
-            access, process_list=process_list)
-        self.on_init()
-
-    def on_init(self):
-        acc = self.access
-        for proc in self.process_list:
-            acc = proc.run(acc)
-        acc.write()
+    def on_run(self, input: str) -> str:
+        r = self.proc(input)
+        return r
+        
 
 
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    CustomConverter(
-        access=CmdAccess('请输入:', need_read=False),
-        process_list=[
-            CustomProcessor(on_run=lambda x: x+'asdff')
-        ],
-    )
+    # 直接运行, 通过 access定义的方式进行读写
+    # 用 .read()取代 .run(), 可以获取处理结果(str类型)
+    CustomProcessor(
+        access=CustomAccess(
+            on_read=lambda: '哈哈哈###',
+            on_write=lambda: print,
+        ),
+        proc=lambda x: x+'啦啦啦'
+    ).run()
