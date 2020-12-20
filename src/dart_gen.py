@@ -1,6 +1,7 @@
 import base
 import utils
 import json
+import abc
 
 
 def type_ddl2dart(ddl_typ: str) -> str:
@@ -14,6 +15,29 @@ def type_ddl2dart(ddl_typ: str) -> str:
     if ddl_typ.startswith('bool'):
         return "bool"
     return "##unkonw-typ:{}#".format(ddl_typ)
+
+# -----------------------------------------------------------------------------
+
+
+class IDartGen(base.IGen):
+    def __init__(self, input_nm: str, output_nm: str = "dart_gen"):
+        super(IDartGen, self).__init__(
+            input_nm=input_nm,
+            output_postfix="dart",
+            annotation_sign="/// ",
+            output_nm=output_nm
+        )
+
+    def convertor_logic(self, in_str: str):
+        all_dict = json.loads(in_str)
+        all_r = ''
+        for ddl in all_dict:
+            all_r += self.convert_by_ddl(ddl)
+        return all_r
+
+    @abc.abstractmethod
+    def convert_by_ddl(self, ddl: dict) -> str:
+        pass
 
 
 class DartEntityGen(base.IGen):
@@ -106,8 +130,76 @@ class DartDtoGen(DartEntityGen):
         return all_r
 
 
+class DartGacICrudRepoGen(IDartGen):
+    def convert_by_ddl(self, ddl: dict):
+        clz = utils.underscore2upper_camel(str(ddl.get('table')))
+        c_ln = "abstract class I%sRepo extends ICrudRepo<%s, String> {}\n" % (
+            clz, clz)
+        return c_ln
+
+
+class DartGacCrudRepoImplGen(IDartGen):
+    # GetArch CrudRepo 生成
+    def convert_by_ddl(self, ddl: dict):
+        clz = utils.underscore2upper_camel(str(ddl.get('table')))
+        under_clz = utils.upper_camel2underscore(clz)
+        c_anno_ln = "@LazySingleton(as: I{_clz}Repo)".format(_clz=clz)
+        c_head_ln = "class %sRepoImpl extends I%sRepo {" % (clz, clz)
+        c_crt_method_ln = (
+            "\n  @override" +
+            "\n  Future <%s> create(%s entity) async {" +
+            "\n    var dto = %sDto.fromDM(entity);" +
+            "\n    var id = getUuid();" +
+            "\n    var r = await _sqlClient" +
+            "\n        .table('%s')" +
+            "\n        .insert(dto.toJson().appendUuid(uuid: id));" +
+            "\n    return dto.copyWith(id: id).toDomain();" +
+            "\n  }") % (clz, clz, clz, under_clz)
+        c_del_method_ln = (
+            "\n  @override" +
+            "\n  Future <Unit> delete(String id) async {" +
+            "\n    var r = await _sqlClient" +
+            "\n        .table('%s')" +
+            "\n        .whereColumn('id', equals: id)" +
+            "\n        .deleteAll();" +
+            "\n    return null;" +
+            "\n  }") % (under_clz,)
+        c_update_method_ln = (
+            "\n  @override" +
+            "\n  Future <%s> update(%s item) async {" +
+            "\n    if (item.id == null) throw StorageFailure('被更新的对象id不能为null');" +
+            "\n    var js = %sDto.fromDM(item).toJson();" +
+            "\n    var r = await _sqlClient.table('%s').insert(js);" +
+            "\n    return item;" +
+            "\n  }") % (clz, clz, clz, under_clz)
+        c_read_method_ln = (
+            "\n  @override" +
+            "\n  Future <%s> read(String id) async {" +
+            "\n    var r = await _sqlClient" +
+            "\n        .table('%s')" +
+            "\n        .whereColumn('id', equals: id)" +
+            "\n        .select()" +
+            "\n        .toMaps();" +
+            "\n    if (r.length == 0) {" +
+            "\n      return null;" +
+            "\n    } else if (r.length == 1) {" +
+            "\n      var js = r[0];" +
+            "\n      var dm = %sDto.fromJson(js).toDomain();" +
+            "\n      return dm;" +
+            "\n    } else {" +
+            "\n      throw StorageFailure('通过id查询到了多个返回值!');" +
+            "\n    }" +
+            "\n  }") % (clz, under_clz, clz)
+        return "%s\n%s\n%s\n%s\n%s\n%s\n}\n\n" % (c_anno_ln, c_head_ln, c_crt_method_ln, c_del_method_ln, c_update_method_ln, c_read_method_ln)
+
+
 if __name__ == "__main__":
     # DartEntityGen('_parse/otp.json', output_nm='_outputs/gen').run()
-    # DartEntityGen('_parse/wms_ddl.json', output_nm='_outputs/wms_entities').run()
-    # DartEntityGen('_parse/wms_ddl.json', output_nm='_outputs/wms_entity').run()
-    DartDtoGen('_parse/wms_ddl.json', output_nm='_outputs/wms_dtos').run()
+    # # DartEntityGen('_parse/wms_ddl.json', output_nm='_outputs/wms_entities').run()
+    # # DartEntityGen('_parse/wms_ddl.json', output_nm='_outputs/wms_entity').run()
+    # DartDtoGen('_parse/wms_ddl.json', output_nm='_outputs/wms_dtos').run()
+    ###
+    # DartGacICrudRepoGen('_parse/wms_ddl.json',
+    #                     output_nm='_outputs/i_wms_repos').run()
+    DartGacCrudRepoImplGen('_parse/wms_ddl.json',
+                       output_nm = '_outputs/wms_repo_impls').run()
