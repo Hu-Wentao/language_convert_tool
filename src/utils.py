@@ -2,7 +2,7 @@ import re
 
 def underscore2upper_camel(nm: str)-> str:
     """
-    小写下划线 转 小驼峰
+    小写下划线 转 大驼峰
     """
     arr = filter(None, nm.lower().split('_'))
     res = ''
@@ -19,15 +19,20 @@ def underscore2upper_camel(nm: str)-> str:
         res = "_"+res
     return res
 
-# def uncamelize( camelCaps, separator="_"):
-#     """
-#     驼峰转下划线
-#     """
-#     pattern = re.compile(r'([A-Z]{1})')
-#     sub = re.sub(pattern, separator+r'\1', camelCaps).lower()
-#     return sub
+def upper_camel2underscore(text):
+    """
+    大驼峰 转 小写下划线
+    """
+    lst = []
+    for index, char in enumerate(text):
+        if char.isupper() and index != 0:
+            lst.append("_")
+        lst.append(char)
+
+    return "".join(lst).lower()
 
 if __name__ == "__main__":
-    print(underscore2upper_camel('wms_asdf'))
-    print(underscore2upper_camel('_wms_asdf'))
-    print(underscore2upper_camel('__wms_asdf'))
+    # print(underscore2upper_camel('wms_asdf'))
+    # print(underscore2upper_camel('_wms_asdf'))
+    # print(underscore2upper_camel('__wms_asdf'))
+    print(upper_camel2underscore("AbcAA"))
