@@ -20,12 +20,18 @@ def type_ddl2dart(ddl_typ: str) -> str:
 
 
 class IDartGen(base.IGen):
-    def __init__(self, input_nm: str, output_nm: str = "dart_gen"):
+    def __init__(self, input_nm: str,  part_file_nm: str, otp_path: str = "_outputs/",):
+        """
+        otp_path: 生成文件的路径, 与[part_file_nm]和[self.output_postfix]合并, 成为完整的文件名
+        part_file_nm: Dart文件的Part, 将会根据该文件生成文件名和 part of 头
+            如, 要生成 xx_repo_impl.dart 的代码, 则该参数为 xx_repo_impl
+        """
+        self.part_file_nm = part_file_nm
         super(IDartGen, self).__init__(
             input_nm=input_nm,
-            output_postfix="dart",
+            output_postfix="py-g.dart",
             annotation_sign="/// ",
-            output_nm=output_nm
+            output_nm=otp_path+part_file_nm
         )
 
     def convertor_logic(self, in_str: str):
@@ -42,6 +48,9 @@ class IDartGen(base.IGen):
 
 class DartEntityGen(base.IGen):
     def __init__(self, input_nm: str, output_nm: str = "gen"):
+        """
+        TODO : 让本类继承于 IDartGen, 同时适配 __init__
+        """
         super(DartEntityGen, self).__init__(
             input_nm=input_nm,
             output_postfix="dart",
@@ -143,6 +152,8 @@ class DartGacCrudRepoImplGen(IDartGen):
     def convert_by_ddl(self, ddl: dict):
         clz = utils.underscore2upper_camel(str(ddl.get('table')))
         under_clz = utils.upper_camel2underscore(clz)
+
+        c_part_ln = "part of '{}.dart';".format(self.part_file_nm)
         c_anno_ln = "@LazySingleton(as: I{_clz}Repo)".format(_clz=clz)
         c_head_ln = "class %sRepoImpl extends I%sRepo {" % (clz, clz)
         c_crt_method_ln = (
@@ -190,7 +201,32 @@ class DartGacCrudRepoImplGen(IDartGen):
             "\n      throw StorageFailure('通过id查询到了多个返回值!');" +
             "\n    }" +
             "\n  }") % (clz, under_clz, clz)
-        return "%s\n%s\n%s\n%s\n%s\n%s\n}\n\n" % (c_anno_ln, c_head_ln, c_crt_method_ln, c_del_method_ln, c_update_method_ln, c_read_method_ln)
+        c_query_by_ln = (
+            "\n  @override" +
+            "\n  Future<List<%s>> queryBy({int limit = null, int offset = 0}) async {" +
+            "\n    var r = await _sqlClient" +
+            "\n        .table('%s')" +
+            "\n        .limit(limit)" +
+            "\n        .offset(offset)" +
+            "\n        .select()" +
+            "\n        .toMaps();" +
+            "\n    return r?.map((js) => %sDto.fromJson(js).toDomain());" +
+            "\n  }") % (clz, under_clz, clz)
+
+        c_end_ln = "}\n"
+        _code_list = [
+            c_part_ln, "\n\n",
+            c_anno_ln, "\n",
+            c_head_ln, "\n",
+            c_crt_method_ln, "\n",
+            c_del_method_ln, "\n",
+            c_update_method_ln, "\n",
+            c_read_method_ln, "\n",
+            c_query_by_ln, "\n",
+            c_end_ln
+        ]
+        return ''.join(_code_list)
+        # return "%s\n%s\n%s\n%s\n%s\n%s\n}\n\n" % (c_anno_ln, c_head_ln, c_crt_method_ln, c_del_method_ln, c_update_method_ln, c_read_method_ln)
 
 
 if __name__ == "__main__":
@@ -201,6 +237,4 @@ if __name__ == "__main__":
     ###
     # DartGacICrudRepoGen('_parse/wms_ddl.json',
     #                     output_nm='_outputs/i_wms_repos').run()
-    DartGacCrudRepoImplGen(
-        '_parse/wms_ddl.json',
-        output_nm='_outputs/wms_repo_impls').run()
+    DartGacCrudRepoImplGen('_parse/wms_ddl.json', 'wms_repo_impls').run()
