@@ -31,7 +31,7 @@ class IConvertor(metaclass=abc.ABCMeta):
                 return
             with open(output_full_nm, "w", encoding="utf-8") as otpt:
                 gen_dt = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                gen_dt = "GEN DT: {}\n".format(gen_dt)
+                gen_dt = "GEN DT: {}".format(gen_dt)
                 if insert_dt and (self.annotation_sign != ""):
                     rst = "{}{}\n{}".format(
                         self.annotation_sign, gen_dt, rst)
@@ -39,6 +39,7 @@ class IConvertor(metaclass=abc.ABCMeta):
                 else:
                     print("未写入时间信息: "+gen_dt)
                 otpt.write(rst)
+                print("文件输出路径: {}".format(output_full_nm))
 
 
 class IParser(IConvertor):
