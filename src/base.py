@@ -113,20 +113,20 @@ class IProcessor(IAccess):
         """
         返回 IAccess, 可以向其他Proc提供数据
         """
-        self.access.set(self.on_run(self.access.read()))
+        self.read()
+        self.access.write()
         return self.access
 
     @abc.abstractmethod
     def on_run(self,input: str) -> str:
         pass
 
-    def read(self, access: IAccess = None) -> str:
+    def read(self, ) -> str:
         """
         这里重写 read(), 当Processor作为 IAccess时, 将会调用本方法 
         """
-        if access is not None:
-            self.access = access
-        return self.run().get()
+        self.access.set(self.on_run(self.access.read()))
+        return self.access.get()
 
 # -----------------------------------------------------------------------------
 
@@ -150,7 +150,7 @@ class CustomAccess(IAccess):
 
     def write(self) -> Optional[str]:
         if self.on_write is not None:
-            err = self.on_write()
+            err = self.on_write(self.value)
             return err
 
 
@@ -171,6 +171,32 @@ class CmdAccess(IAccess):
     def write(self, leading: str = '', trailing: str = ''):
         print(leading+self.value+trailing)
 
+class FileAccess(IAccess):
+    """
+    从文件中读写数据
+    """
+    def __init__(self,in_file:str, in_path="_inputs/",out_file:str="opt", out_path:str="_outputs/",write_gen:bool= True):
+        super(FileAccess, self).__init__()
+        self.in_file = in_file
+        self.in_path = in_path
+        self.out_file = out_file
+        self.out_path = out_path
+        self.write_gen= write_gen
+
+    def read(self):
+        with open(self.in_path+self.in_file, "r", encoding="utf-8") as f:
+            self.value = f.read()
+    
+    def write(self):
+        path = self.out_path+self.out_file
+        gen_dt = "GEN DT: {}\n".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
+        with open(path,"w",encoding="utf-8") as f:
+            w = self.value
+            if self.write_gen:
+                w = gen_dt+w
+            f.write(w)
+        print('写入文件:'+path+"\n"+gen_dt)
+        
 
 class CustomProcessor(IProcessor):
     """
@@ -181,8 +207,14 @@ class CustomProcessor(IProcessor):
         super(CustomProcessor, self).__init__(access=access)
         self.proc = proc
 
+    def read(self) -> str:
+        self.value = self.on_run(self.access.read())
+        self.access.write()
+        return self.value
+
     def on_run(self, input: str) -> str:
         r = self.proc(input)
+        print('rr',r)
         return r
         
 
@@ -191,10 +223,19 @@ class CustomProcessor(IProcessor):
 if __name__ == "__main__":
     # 直接运行, 通过 access定义的方式进行读写
     # 用 .read()取代 .run(), 可以获取处理结果(str类型)
-    CustomProcessor(
+    c = CustomProcessor(
         access=CustomAccess(
             on_read=lambda: '哈哈哈###',
-            on_write=lambda: print,
+            on_write=lambda x: print(x),
         ),
         proc=lambda x: x+'啦啦啦'
     ).run()
+
+    # 将其他 Processor作为 Access
+    # CustomProcessor(
+    #     access=CustomAccess(
+    #         on_read=lambda: c.get(),
+    #         on_write=lambda: print,
+    #     ),
+    #     proc=lambda x: x+'啦啦啦'
+    # ).run()
