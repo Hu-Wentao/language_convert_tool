@@ -203,14 +203,14 @@ class DartGacCrudRepoImplGen(IDartGen):
             "\n  }") % (clz, under_clz, clz)
         c_query_by_ln = (
             "\n  @override" +
-            "\n  Future<List<%s>> queryBy({int limit = null, int offset = 0}) async {" +
+            "\n  Future<List<%s>> query({int limit = null, int offset = 0}) async {" +
             "\n    var r = await _sqlClient" +
             "\n        .table('%s')" +
             "\n        .limit(limit)" +
             "\n        .offset(offset)" +
             "\n        .select()" +
             "\n        .toMaps();" +
-            "\n    return r?.map((js) => %sDto.fromJson(js).toDomain());" +
+            "\n    return r?.map((js) => %sDto.fromJson(js).toDomain())?.toList();" +
             "\n  }") % (clz, under_clz, clz)
 
         c_end_ln = "}\n"

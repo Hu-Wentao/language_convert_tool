@@ -1,0 +1,39 @@
+{
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "src/experimental",
+        "src/typestubs"
+    ],
+    "ignore": [
+        "_inputs",
+        "_outputs",
+        "_parse"
+    ],
+    "stubPath": "src/stubs",
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.6",
+    "pythonPlatform": "Linux",
+    "executionEnvironments": [
+        {
+            "root": "src/",
+            "pythonVersion": "3.7",
+            "pythonPlatform": "Windows",
+            "extraPaths": [
+            ]
+        },
+        {
+            "root": "src/tests",
+            "extraPaths": [
+                "src/tests"
+            ]
+        },
+        {
+            "root": "src"
+        }
+    ]
+}
