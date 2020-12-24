@@ -1,8 +1,10 @@
 import datetime
 import abc
+from abc import ABC
+
 
 class IConvertor(metaclass=abc.ABCMeta):
-    def __init__(self, input_full_nm: str, output_postfix: str, annotation_sign: str, output_nm: str = "otp",):
+    def __init__(self, input_full_nm: str, output_postfix: str, annotation_sign: str, output_nm: str = "otp", ):
         """
         input_full_nm: 输入文件的完全名称, 包括路径和后缀
         output_postfix: 输出文件的后缀
@@ -22,10 +24,10 @@ class IConvertor(metaclass=abc.ABCMeta):
         if input_nm == "":
             input_nm = self.input_nm
         if output_full_nm == "":
-            output_full_nm = self.output_nm+"."+self.output_postfix
+            output_full_nm = self.output_nm + "." + self.output_postfix
 
         with open(input_nm, "r", encoding="utf-8") as inpt:
-            rst = self.convertor_logic(inpt.read(),)
+            rst = self.convertor_logic(inpt.read(), )
             if rst is None:
                 print("写入值为空, 请检查代码!")
                 return
@@ -35,14 +37,14 @@ class IConvertor(metaclass=abc.ABCMeta):
                 if insert_dt and (self.annotation_sign != ""):
                     rst = "{}{}\n{}".format(
                         self.annotation_sign, gen_dt, rst)
-                    print("成功写入时间信息: "+gen_dt)
+                    print("成功写入时间信息: " + gen_dt)
                 else:
-                    print("未写入时间信息: "+gen_dt)
+                    print("未写入时间信息: " + gen_dt)
                 otpt.write(rst)
                 print("文件输出路径: {}".format(output_full_nm))
 
 
-class IParser(IConvertor):
+class IParser(IConvertor, ABC):
     """
     解析其他语言生成json
     """
@@ -54,10 +56,12 @@ class IParser(IConvertor):
             annotation_sign="",
             output_nm=output_nm)
 
-class IGen(IConvertor):
+
+class IGen(IConvertor, ABC):
     """
     将json转换为其他语言
     """
+
     def __init__(self, input_nm: str, output_postfix: str, annotation_sign: str, output_nm: str = "gen"):
         super(IGen, self).__init__(
             input_full_nm=input_nm,
@@ -65,4 +69,3 @@ class IGen(IConvertor):
             annotation_sign=annotation_sign,
             output_nm=output_nm
         )
-
