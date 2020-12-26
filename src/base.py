@@ -62,10 +62,15 @@ class IGen(IConvertor, ABC):
     将json转换为其他语言
     """
 
-    def __init__(self, input_nm: str, output_postfix: str, annotation_sign: str, output_nm: str = "gen"):
+    def __init__(self, annotation_sign: str,
+                 input_nm: str,
+                 opt_postfix: str,
+                 otp_path: str = "_outputs/",
+                 opt_nm: str = "gen"):
+
         super(IGen, self).__init__(
             input_full_nm=input_nm,
-            output_postfix=output_postfix,
+            output_postfix=opt_postfix,
             annotation_sign=annotation_sign,
-            output_nm=output_nm
+            output_nm=otp_path+opt_nm
         )

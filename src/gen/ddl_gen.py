@@ -5,7 +5,7 @@ import abc
 
 
 class IDdlGen(base.IGen):
-    def __init__(self, input_nm: str, gen_file_nm: str, otp_path: str = "_outputs/", ):
+    def __init__(self, input_nm: str, gen_file_nm: str, otp_path: str = "", ):
         """
         otp_path: 生成文件的路径, 与[part_file_nm]和[self.output_postfix]合并, 成为完整的文件名
         part_file_nm: Dart文件的Part, 将会根据该文件生成文件名和 part of 头
@@ -14,9 +14,9 @@ class IDdlGen(base.IGen):
         self.gen_file_nm = gen_file_nm
         super(IDdlGen, self).__init__(
             input_nm=input_nm,
-            output_postfix="py-g.sql",
+            opt_postfix="py-g.sql",
             annotation_sign="-- ",
-            output_nm=otp_path + gen_file_nm
+            opt_nm=otp_path + gen_file_nm
         )
 
     def convertor_logic(self, in_str: str):

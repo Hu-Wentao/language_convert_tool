@@ -20,7 +20,7 @@ def type_ddl2dart(ddl_typ: str) -> str:
 
 
 class IDartGen(base.IGen):
-    def __init__(self, input_nm: str,  part_file_nm: str, otp_path: str = "_outputs/",):
+    def __init__(self, input_nm: str,  part_file_nm: str, otp_path: str = "",):
         """
         otp_path: 生成文件的路径, 与[part_file_nm]和[self.output_postfix]合并, 成为完整的文件名
         part_file_nm: Dart文件的Part, 将会根据该文件生成文件名和 part of 头
@@ -29,9 +29,9 @@ class IDartGen(base.IGen):
         self.part_file_nm = part_file_nm
         super(IDartGen, self).__init__(
             input_nm=input_nm,
-            output_postfix="py-g.dart",
+            opt_postfix="py-g.dart",
             annotation_sign="/// ",
-            output_nm=otp_path+part_file_nm
+            opt_nm=otp_path + part_file_nm
         )
 
     def convertor_logic(self, in_str: str):
@@ -47,15 +47,15 @@ class IDartGen(base.IGen):
 
 
 class DartEntityGen(base.IGen):
-    def __init__(self, input_nm: str, output_nm: str = "gen"):
+    def __init__(self, input_nm: str, opt_nm: str = "gen"):
         """
         TODO : 让本类继承于 IDartGen, 同时适配 __init__
         """
         super(DartEntityGen, self).__init__(
             input_nm=input_nm,
-            output_postfix="dart",
+            opt_postfix="dart",
             annotation_sign="/// ",
-            output_nm=output_nm
+            opt_nm=opt_nm
         )
 
     def convertor_logic(self, in_str: str):
