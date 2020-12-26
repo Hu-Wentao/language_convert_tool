@@ -1,10 +1,10 @@
+from abc import ABC
+
 import base
 import utils
-import json
-import abc
 
 
-class IDdlGen(base.IGen):
+class IDdlGen(base.IGen, ABC):
     def __init__(self, input_nm: str, gen_file_nm: str, otp_path: str = "", ):
         """
         otp_path: 生成文件的路径, 与[part_file_nm]和[self.output_postfix]合并, 成为完整的文件名
@@ -18,18 +18,6 @@ class IDdlGen(base.IGen):
             annotation_sign="-- ",
             opt_nm=otp_path + gen_file_nm
         )
-
-    def convertor_logic(self, in_str: str):
-        all_dict = json.loads(in_str)
-        print('load')
-        all_r = ''
-        for ddl in all_dict:
-            all_r += self.convert_by_ddl(ddl)
-        return all_r
-
-    @abc.abstractmethod
-    def convert_by_ddl(self, ddl: dict):
-        pass
 
 
 class DdlGen(IDdlGen):

@@ -1,26 +1,28 @@
+from abc import ABC
+
 import base
 import utils
 import json
-import abc
 
 
 def type_ddl2dart(ddl_typ: str) -> str:
-    if ddl_typ.startswith('varchar')\
+    if ddl_typ.startswith('varchar') \
             or ddl_typ.startswith('text'):
         return "String"
-    if ddl_typ.startswith('numeric')\
-            or ddl_typ.startswith('int')\
+    if ddl_typ.startswith('numeric') \
+            or ddl_typ.startswith('int') \
             or ddl_typ.startswith('timestamp'):
         return "int"
     if ddl_typ.startswith('bool'):
         return "bool"
     return "##unkonw-typ:{}#".format(ddl_typ)
 
+
 # -----------------------------------------------------------------------------
 
 
-class IDartGen(base.IGen):
-    def __init__(self, input_nm: str,  part_file_nm: str, otp_path: str = "",):
+class IDartGen(base.IGen, ABC):
+    def __init__(self, input_nm: str, part_file_nm: str, otp_path: str = "", ):
         """
         otp_path: 生成文件的路径, 与[part_file_nm]和[self.output_postfix]合并, 成为完整的文件名
         part_file_nm: Dart文件的Part, 将会根据该文件生成文件名和 part of 头
@@ -34,19 +36,12 @@ class IDartGen(base.IGen):
             opt_nm=otp_path + part_file_nm
         )
 
-    def convertor_logic(self, in_str: str):
-        all_dict = json.loads(in_str)
-        all_r = ''
-        for ddl in all_dict:
-            all_r += self.convert_by_ddl(ddl)
-        return all_r
-
-    @abc.abstractmethod
-    def convert_by_ddl(self, ddl: dict) -> str:
-        pass
-
 
 class DartEntityGen(base.IGen):
+    def convert_by_ddl(self, ddl: dict) -> str:
+        # todo 没有使用父类的convertor_logic方法,
+        pass
+
     def __init__(self, input_nm: str, opt_nm: str = "gen"):
         """
         TODO : 让本类继承于 IDartGen, 同时适配 __init__
@@ -86,7 +81,7 @@ class DartEntityGen(base.IGen):
                 all_fld_nm_ln)
             # 合并
             all_r += (
-                "\n%s\n%s\n%s\n%s}" % (g_head_ln, g_all_flds, g_constructor, g_props))
+                    "\n%s\n%s\n%s\n%s}" % (g_head_ln, g_all_flds, g_constructor, g_props))
         return all_r
 
 
@@ -127,7 +122,7 @@ class DartDtoGen(DartEntityGen):
                 _clz=clz)
             # 合并 Dto类
             all_r += (
-                "\n@freezed\n%s\n%s\n%s\n%s}" % (g_head_ln, g_constructor, g_fm_dm, g_fm_js))
+                    "\n@freezed\n%s\n%s\n%s\n%s}" % (g_head_ln, g_constructor, g_fm_dm, g_fm_js))
             ##
             # 构建 extension
             x_head_ln = "extension %sDtoX on %sDto {" % (clz, clz)
@@ -135,7 +130,7 @@ class DartDtoGen(DartEntityGen):
             x_to_dm_ln = "  {_clz} toDomain() => {_clz}({_all_x_param});".format(
                 _clz=clz, _all_x_param=all_x_param_ln)
             gg_extension_all = "%s %s}" % (x_head_ln, x_to_dm_ln)
-            all_r += "\n"+gg_extension_all
+            all_r += "\n" + gg_extension_all
         return all_r
 
 
@@ -157,61 +152,61 @@ class DartGacCrudRepoImplGen(IDartGen):
         c_anno_ln = "@LazySingleton(as: I{_clz}Repo)".format(_clz=clz)
         c_head_ln = "class %sRepoImpl extends I%sRepo {" % (clz, clz)
         c_crt_method_ln = (
-            "\n  @override" +
-            "\n  Future <%s> create(%s entity) async {" +
-            "\n    var dto = %sDto.fromDM(entity);" +
-            "\n    var id = getUuid();" +
-            "\n    var r = await _sqlClient" +
-            "\n        .table('%s')" +
-            "\n        .insert(dto.toJson().appendUuid(uuid: id));" +
-            "\n    return dto.copyWith(id: id).toDomain();" +
-            "\n  }") % (clz, clz, clz, under_clz)
+                                  "\n  @override" +
+                                  "\n  Future <%s> create(%s entity) async {" +
+                                  "\n    var dto = %sDto.fromDM(entity);" +
+                                  "\n    var id = getUuid();" +
+                                  "\n    var r = await _sqlClient" +
+                                  "\n        .table('%s')" +
+                                  "\n        .insert(dto.toJson().appendUuid(uuid: id));" +
+                                  "\n    return dto.copyWith(id: id).toDomain();" +
+                                  "\n  }") % (clz, clz, clz, under_clz)
         c_del_method_ln = (
-            "\n  @override" +
-            "\n  Future <Unit> delete(String id) async {" +
-            "\n    var r = await _sqlClient" +
-            "\n        .table('%s')" +
-            "\n        .whereColumn('id', equals: id)" +
-            "\n        .deleteAll();" +
-            "\n    return null;" +
-            "\n  }") % (under_clz,)
+                                  "\n  @override" +
+                                  "\n  Future <Unit> delete(String id) async {" +
+                                  "\n    var r = await _sqlClient" +
+                                  "\n        .table('%s')" +
+                                  "\n        .whereColumn('id', equals: id)" +
+                                  "\n        .deleteAll();" +
+                                  "\n    return null;" +
+                                  "\n  }") % (under_clz,)
         c_update_method_ln = (
-            "\n  @override" +
-            "\n  Future <%s> update(%s item) async {" +
-            "\n    if (item.id == null) throw StorageFailure('被更新的对象id不能为null');" +
-            "\n    var js = %sDto.fromDM(item).toJson();" +
-            "\n    var r = await _sqlClient.table('%s').insert(js);" +
-            "\n    return item;" +
-            "\n  }") % (clz, clz, clz, under_clz)
+                                     "\n  @override" +
+                                     "\n  Future <%s> update(%s item) async {" +
+                                     "\n    if (item.id == null) throw StorageFailure('被更新的对象id不能为null');" +
+                                     "\n    var js = %sDto.fromDM(item).toJson();" +
+                                     "\n    var r = await _sqlClient.table('%s').insert(js);" +
+                                     "\n    return item;" +
+                                     "\n  }") % (clz, clz, clz, under_clz)
         c_read_method_ln = (
-            "\n  @override" +
-            "\n  Future <%s> read(String id) async {" +
-            "\n    var r = await _sqlClient" +
-            "\n        .table('%s')" +
-            "\n        .whereColumn('id', equals: id)" +
-            "\n        .select()" +
-            "\n        .toMaps();" +
-            "\n    if (r.length == 0) {" +
-            "\n      return null;" +
-            "\n    } else if (r.length == 1) {" +
-            "\n      var js = r[0];" +
-            "\n      var dm = %sDto.fromJson(js).toDomain();" +
-            "\n      return dm;" +
-            "\n    } else {" +
-            "\n      throw StorageFailure('通过id查询到了多个返回值!');" +
-            "\n    }" +
-            "\n  }") % (clz, under_clz, clz)
+                                   "\n  @override" +
+                                   "\n  Future <%s> read(String id) async {" +
+                                   "\n    var r = await _sqlClient" +
+                                   "\n        .table('%s')" +
+                                   "\n        .whereColumn('id', equals: id)" +
+                                   "\n        .select()" +
+                                   "\n        .toMaps();" +
+                                   "\n    if (r.length == 0) {" +
+                                   "\n      return null;" +
+                                   "\n    } else if (r.length == 1) {" +
+                                   "\n      var js = r[0];" +
+                                   "\n      var dm = %sDto.fromJson(js).toDomain();" +
+                                   "\n      return dm;" +
+                                   "\n    } else {" +
+                                   "\n      throw StorageFailure('通过id查询到了多个返回值!');" +
+                                   "\n    }" +
+                                   "\n  }") % (clz, under_clz, clz)
         c_query_by_ln = (
-            "\n  @override" +
-            "\n  Future<List<%s>> query({int limit = null, int offset = 0}) async {" +
-            "\n    var r = await _sqlClient" +
-            "\n        .table('%s')" +
-            "\n        .limit(limit)" +
-            "\n        .offset(offset)" +
-            "\n        .select()" +
-            "\n        .toMaps();" +
-            "\n    return r?.map((js) => %sDto.fromJson(js).toDomain())?.toList();" +
-            "\n  }") % (clz, under_clz, clz)
+                                "\n  @override" +
+                                "\n  Future<List<%s>> query({int limit = null, int offset = 0}) async {" +
+                                "\n    var r = await _sqlClient" +
+                                "\n        .table('%s')" +
+                                "\n        .limit(limit)" +
+                                "\n        .offset(offset)" +
+                                "\n        .select()" +
+                                "\n        .toMaps();" +
+                                "\n    return r?.map((js) => %sDto.fromJson(js).toDomain())?.toList();" +
+                                "\n  }") % (clz, under_clz, clz)
 
         c_end_ln = "}\n"
         _code_list = [
@@ -226,7 +221,6 @@ class DartGacCrudRepoImplGen(IDartGen):
             c_end_ln
         ]
         return ''.join(_code_list)
-        # return "%s\n%s\n%s\n%s\n%s\n%s\n}\n\n" % (c_anno_ln, c_head_ln, c_crt_method_ln, c_del_method_ln, c_update_method_ln, c_read_method_ln)
 
 
 if __name__ == "__main__":

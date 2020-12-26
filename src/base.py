@@ -1,5 +1,6 @@
 import datetime
 import abc
+import json
 from abc import ABC
 
 
@@ -26,8 +27,8 @@ class IConvertor(metaclass=abc.ABCMeta):
         if output_full_nm == "":
             output_full_nm = self.output_nm + "." + self.output_postfix
 
-        with open(input_nm, "r", encoding="utf-8") as inpt:
-            rst = self.convertor_logic(inpt.read(), )
+        with open(input_nm, "r", encoding="utf-8") as file:
+            rst = self.convertor_logic(file.read(), )
             if rst is None:
                 print("写入值为空, 请检查代码!")
                 return
@@ -67,10 +68,20 @@ class IGen(IConvertor, ABC):
                  opt_postfix: str,
                  otp_path: str = "_outputs/",
                  opt_nm: str = "gen"):
-
         super(IGen, self).__init__(
             input_full_nm=input_nm,
             output_postfix=opt_postfix,
             annotation_sign=annotation_sign,
-            output_nm=otp_path+opt_nm
+            output_nm=otp_path + opt_nm
         )
+
+    def convertor_logic(self, in_str: str):
+        all_dict = json.loads(in_str)
+        all_r = ''
+        for ddl in all_dict:
+            all_r += self.convert_by_ddl(ddl)
+        return all_r
+
+    @abc.abstractmethod
+    def convert_by_ddl(self, ddl: dict) -> str:
+        pass
