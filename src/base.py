@@ -17,6 +17,12 @@ class IConvertor(metaclass=abc.ABCMeta):
         self.annotation_sign = annotation_sign
         self.output_nm = output_nm
 
+    def insert_file_start(self) -> str:
+        return ''
+
+    def insert_file_end(self) -> str:
+        return ''
+
     @abc.abstractmethod
     def convertor_logic(self, in_str: str) -> str:
         pass
@@ -27,21 +33,32 @@ class IConvertor(metaclass=abc.ABCMeta):
         if output_full_nm == "":
             output_full_nm = self.output_nm + "." + self.output_postfix
 
-        with open(input_nm, "r", encoding="utf-8") as file:
-            rst = self.convertor_logic(file.read(), )
+        with open(input_nm, "r", encoding="utf-8") as inp:
+            rst = self.convertor_logic(inp.read(), )
             if rst is None:
                 print("写入值为空, 请检查代码!")
                 return
-            with open(output_full_nm, "w", encoding="utf-8") as otpt:
-                gen_dt = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                gen_dt = "GEN DT: {}".format(gen_dt)
+            with open(output_full_nm, "w", encoding="utf-8") as otp:
+                all_outputs = []
+
+                gen_dt = "{}GEN DT: {}\n".format(
+                    self.annotation_sign,
+                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
                 if insert_dt and (self.annotation_sign != ""):
-                    rst = "{}{}\n{}".format(
-                        self.annotation_sign, gen_dt, rst)
+                    all_outputs.append(gen_dt)
                     print("成功写入时间信息: " + gen_dt)
                 else:
                     print("未写入时间信息: " + gen_dt)
-                otpt.write(rst)
+
+                start = self.insert_file_start()
+                end = self.insert_file_end()
+                if start != '':
+                    all_outputs.append(start)
+                if rst != '':
+                    all_outputs.append(rst)
+                if end != '':
+                    all_outputs.append(end)
+                otp.writelines(all_outputs)
                 print("文件输出路径: {}".format(output_full_nm))
 
 
