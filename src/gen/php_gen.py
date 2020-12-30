@@ -25,7 +25,6 @@ class PhpEntityGen(IPhpGen):
 
     def convert_by_ddl(self, ddl: dict) -> str:
         clz = utils.underscore2upper_camel(str(ddl.get('table')))
-        under_clz = utils.upper_camel2underscore(clz)
         fls = ddl.get('fields')
         # --
         c_head_ln = "class %s\n{" % clz
@@ -61,5 +60,5 @@ class PhpEntityGen(IPhpGen):
 
 
 if __name__ == '__main__':
-    PhpEntityGen(input_nm='../../_parse/wms_ddl.json', opt_nm='wms_ddl').run()
+    PhpEntityGen(input_nm='../../_parse/wms_ddl.json', opt_nm='wms_entities').run()
     # PhpEntityGen(input_nm='D:\proj_py\language_convert_tool\_parse\wms_ddl.json', opt_nm='wms_ddl').run()
